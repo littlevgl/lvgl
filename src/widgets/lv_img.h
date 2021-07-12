@@ -41,9 +41,17 @@ typedef struct {
     uint8_t src_type : 2;  /*See: lv_img_src_t*/
     uint8_t cf : 5;        /*Color format from `lv_img_color_format_t`*/
     uint8_t antialias : 1; /*Apply anti-aliasing in transformations (rotate, zoom)*/
+    uint8_t obj_size_mode: 2; /*Image size mode when image size and object size is different.*/
 } lv_img_t;
 
 extern const lv_obj_class_t lv_img_class;
+
+/*Image size mode, when image size and object size is different*/
+enum {
+    LV_IMG_OBJ_SIZE_MODE_ORIGINAL = 0, /*Content size equals original image size*/
+    LV_IMG_OBJ_SIZE_MODE_ZOOMED, /*If object size is set to SIZE_CONTENT, then object size equals zoomed image size, otherwise, object size stays as setting value. */
+};
+typedef uint8_t lv_img_content_size_mode_t;
 
 /**********************
  * GLOBAL PROTOTYPES
@@ -123,6 +131,13 @@ void lv_img_set_zoom(lv_obj_t * obj, uint16_t zoom);
  */
 void lv_img_set_antialias(lv_obj_t * obj, bool antialias);
 
+/**
+ * Set the image object size mode.
+ *
+ * @param obj       pointer to an image object
+ * @param mode      the new size mode.
+ */
+void lv_img_set_content_size_mode(lv_obj_t * obj, lv_img_content_size_mode_t mode);
 /*=====================
  * Getter functions
  *====================*/

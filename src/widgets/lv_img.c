@@ -291,6 +291,15 @@ void lv_img_set_antialias(lv_obj_t * obj, bool antialias)
     lv_obj_invalidate(obj);
 }
 
+void lv_img_set_content_size_mode(lv_obj_t * obj, lv_img_content_size_mode_t mode)
+{
+    lv_img_t * img = (lv_img_t *)obj;
+    if(mode == img->obj_size_mode) return;
+
+    img->obj_size_mode = mode;
+    lv_obj_invalidate(obj);
+}
+
 /*=====================
  * Getter functions
  *====================*/
@@ -381,6 +390,7 @@ static void lv_img_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
     img->offset.y  = 0;
     img->pivot.x = 0;
     img->pivot.y = 0;
+    img->obj_size_mode = LV_IMG_OBJ_SIZE_MODE_ORIGINAL;
 
     lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(obj, LV_OBJ_FLAG_ADV_HITTEST);
@@ -397,6 +407,22 @@ static void lv_img_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
         img->src      = NULL;
         img->src_type = LV_IMG_SRC_UNKNOWN;
     }
+}
+
+static lv_point_t lv_img_get_tranformed_size(lv_obj_t* obj)
+{
+    lv_img_t * img = (lv_img_t *)obj;
+
+    int32_t zoom_final = lv_obj_get_style_transform_zoom(obj, LV_PART_MAIN);
+    zoom_final = (zoom_final * img->zoom) >> 8;
+    int32_t angle_final = lv_obj_get_style_transform_angle(obj, LV_PART_MAIN);
+    angle_final += img->angle;
+
+    lv_area_t area_transform;
+    _lv_img_buf_get_transformed_area(&area_transform, img->w, img->h ,
+            angle_final, zoom_final, &img->pivot);
+
+    return (lv_point_t){lv_area_get_width(&area_transform), lv_area_get_height(&area_transform)};
 }
 
 static void lv_img_event(const lv_obj_class_t * class_p, lv_event_t * e)
@@ -477,9 +503,14 @@ static void lv_img_event(const lv_obj_class_t * class_p, lv_event_t * e)
         }
     }
     else if(code == LV_EVENT_GET_SELF_SIZE) {
-        lv_point_t * p = lv_event_get_param(e);;
-        p->x = img->w;
-        p->y = img->h;
+        lv_point_t * p = lv_event_get_param(e);
+        if (img->obj_size_mode == LV_IMG_OBJ_SIZE_MODE_ZOOMED){
+            *p = lv_img_get_tranformed_size(obj);
+        }
+        else {
+            p->x = img->w;
+            p->y = img->h;
+        }
     }
     else if(code == LV_EVENT_DRAW_MAIN || code == LV_EVENT_DRAW_POST || code == LV_EVENT_COVER_CHECK) {
         draw_img(e);
@@ -564,14 +595,21 @@ static void draw_img(lv_event_t * e)
         bg_pivot.x = img->pivot.x + pleft;
         bg_pivot.y = img->pivot.y + ptop;
         lv_area_t bg_coords;
-        _lv_img_buf_get_transformed_area(&bg_coords, obj_w, obj_h,
-                angle_final, zoom_final, &bg_pivot);
 
-        /*Modify the coordinates to draw the background for the rotated and scaled coordinates*/
-        bg_coords.x1 += obj->coords.x1;
-        bg_coords.y1 += obj->coords.y1;
-        bg_coords.x2 += obj->coords.x1;
-        bg_coords.y2 += obj->coords.y1;
+        if (img->obj_size_mode == LV_IMG_OBJ_SIZE_MODE_ZOOMED) {
+            /*Object size equals to transformed image size*/
+            lv_obj_get_coords(obj, &bg_coords);
+        }
+        else {
+            _lv_img_buf_get_transformed_area(&bg_coords, obj_w, obj_h,
+                    angle_final, zoom_final, &bg_pivot);
+
+            /*Modify the coordinates to draw the background for the rotated and scaled coordinates*/
+            bg_coords.x1 += obj->coords.x1;
+            bg_coords.y1 += obj->coords.y1;
+            bg_coords.x2 += obj->coords.x1;
+            bg_coords.y2 += obj->coords.y1;
+        }
 
         lv_area_t ori_coords;
         lv_area_copy(&ori_coords, &obj->coords);
@@ -590,6 +628,20 @@ static void draw_img(lv_event_t * e)
 
             lv_area_t img_max_area;
             lv_area_copy(&img_max_area, &obj->coords);
+
+            lv_point_t img_size_final = lv_img_get_tranformed_size(obj);
+
+            if(img->obj_size_mode == LV_IMG_OBJ_SIZE_MODE_ZOOMED){
+                img_max_area.x1 -= ((img->w - img_size_final.x) + 1) / 2;
+                img_max_area.x2 -= ((img->w - img_size_final.x) + 1) / 2;
+                img_max_area.y1 -= ((img->h - img_size_final.y) + 1) / 2;
+                img_max_area.y2 -= ((img->h - img_size_final.y) + 1) / 2;
+            }
+            else {
+                img_max_area.x2 = img_max_area.x1 + lv_area_get_width(&bg_coords) - 1;
+                img_max_area.y2 = img_max_area.y1 + lv_area_get_height(&bg_coords) - 1;
+            }
+
             img_max_area.x1 += pleft;
             img_max_area.y1 += ptop;
             img_max_area.x2 -= pright;
@@ -619,12 +671,12 @@ static void draw_img(lv_event_t * e)
                 if(coords_tmp.y1 > img_max_area.y1) coords_tmp.y1 -= img->h;
                 coords_tmp.y2 = coords_tmp.y1 + img->h - 1;
 
-                for(; coords_tmp.y1 < img_max_area.y2; coords_tmp.y1 += img->h, coords_tmp.y2 += img->h) {
+                for(; coords_tmp.y1 < img_max_area.y2; coords_tmp.y1 += img_size_final.y, coords_tmp.y2 += img_size_final.y) {
                     coords_tmp.x1 = img_max_area.x1 + img->offset.x;
                     if(coords_tmp.x1 > img_max_area.x1) coords_tmp.x1 -= img->w;
                     coords_tmp.x2 = coords_tmp.x1 + img->w - 1;
 
-                    for(; coords_tmp.x1 < img_max_area.x2; coords_tmp.x1 += img->w, coords_tmp.x2 += img->w) {
+                    for(; coords_tmp.x1 < img_max_area.x2; coords_tmp.x1 += img_size_final.x, coords_tmp.x2 += img_size_final.x) {
                         lv_draw_img(&coords_tmp, &img_clip_area, img->src, &img_dsc);
                     }
                 }

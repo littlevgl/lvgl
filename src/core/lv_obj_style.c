@@ -382,6 +382,8 @@ _lv_style_state_cmp_t _lv_obj_style_state_compare(lv_obj_t * obj, lv_state_t sta
             else if(lv_style_get_prop(style, LV_STYLE_MIN_HEIGHT, &v)) layout_diff = true;
             else if(lv_style_get_prop(style, LV_STYLE_MAX_HEIGHT, &v)) layout_diff = true;
             else if(lv_style_get_prop(style, LV_STYLE_BORDER_WIDTH, &v)) layout_diff = true;
+            else if(lv_style_get_prop(style, LV_STYLE_TRANSFORM_ANGLE, &v)) layout_diff = true;
+            else if(lv_style_get_prop(style, LV_STYLE_TRANSFORM_ZOOM, &v)) layout_diff = true;
 
             if(layout_diff) {
                 if(part_act == LV_PART_MAIN) {

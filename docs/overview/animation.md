@@ -104,6 +104,28 @@ The speed is interpreted in _unit/sec_ dimension. For example,  `lv_anim_speed_t
 
 You can delete an animation with `lv_anim_del(var, func)` if you provide the animated variable and its animator function.
 
+## Timeline
+Timeline is a collection of multiple Animations, which makes it easy to create complex composite animations.
+
+Firstly, create the animation element, but don’t call `lv_anim_start()`.
+
+Secondly, create an animation timeline object, by calling `lv_anim_timeline_create()`.
+
+Thirdly, add animation elements to the animation timeline, by calling `lv_anim_timeline_add(at, start_time, &a)`. `start_time` is the start time of the animation on the timeline. Note that `start_time` will override the value of `delay`.
+
+Finally, call `lv_anim_timeline_start(at)` to start the animation timeline.
+
+It supports forward and backward playback of the entire animation group, using `lv_anim_timeline_set_reverse(at, reverse)`.
+
+Call the `lv_anim_timeline_set_progress(at, progress)` function to set the state of the object corresponding to the progress of the timeline.
+
+Call the `lv_anim_timeline_get_playtime(at)` function to get the total duration of the entire animation timeline.
+
+Call the `lv_anim_timeline_get_reverse(at)` function to get whether to reverse the animation timeline.
+
+Call the `lv_anim_timeline_del(at)` function to delete the animation timeline.
+
+![](/misc/anim-timeline.png "timeline diagram")
 
 ## Examples
 

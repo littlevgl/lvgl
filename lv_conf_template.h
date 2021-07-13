@@ -214,6 +214,9 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  define LV_GC_INCLUDE "gc.h"                           /*Include Garbage Collector related things*/
 #endif /*LV_ENABLE_GC*/
 
+/*1: Enable custom execution callback of the animation timeline, might be used by binding generator functions*/
+#define LV_ANIM_TIMELINE_CUSTOM_EXEC    0
+
 /*=====================
  *  COMPILER SETTINGS
  *====================*/

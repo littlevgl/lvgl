@@ -27,6 +27,8 @@ extern "C" {
  **********************/
 void lv_example_anim_1(void);
 void lv_example_anim_2(void);
+void lv_example_anim_timeline_1(void);
+void lv_example_anim_timeline_2(void);
 
 /**********************
  *      MACROS

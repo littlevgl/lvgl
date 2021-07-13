@@ -1,4 +1,5 @@
 CSRCS += lv_anim.c
+CSRCS += lv_anim_timeline.c
 CSRCS += lv_area.c
 CSRCS += lv_async.c
 CSRCS += lv_bidi.c
